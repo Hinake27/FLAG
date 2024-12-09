@@ -1,0 +1,1650 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GTA5 Vehicle Flags Viewer</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            padding: 20px;
+            background-color: #BDC0BA;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* 新的按鈕布局樣式 */
+        .button-container {
+            margin-bottom: 20px;
+            background: rgb(189, 192, 186);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .paste-input {
+            flex: 1;
+            padding: 12px;
+            font-size: 16px;
+            border: 1px solid #78552B;
+            border-radius: 8px;
+            height: 45px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .paste-button, .clear-all, .copy-all {
+            white-space: nowrap;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            height: 45px;
+        }
+
+        .paste-button {
+            background: #8B81C3;
+            color: white;
+        }
+
+        .clear-all {
+            background: #C73E3A;
+            color: white;
+        }
+
+        .copy-all {
+            background: #F05E1C;
+            color: white;
+        }
+
+        .paste-button:hover, .clear-all:hover, .copy-all:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .search-container {
+            margin-bottom: 20px;
+            position: sticky;
+            top: 0;
+            background: #BDC0BA;
+            padding: 10px 0;
+            z-index: 100;
+        }
+
+        #searchInput {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border: 1px solid #78552B;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .selected-flags-container {
+            background: #fff;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: none;
+        }
+
+        .selected-flags {
+            min-height: 50px;
+            padding: 15px;
+            border: 1px solid #e1e4e8;
+            border-radius: 8px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            background: #f8f9fa;
+            font-family: monospace;
+            font-size: 14px;
+        }
+
+        .flags-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .flag-item {
+    background: #838A2D;
+    padding: 5px; /* 減少內邊距以節省空間 */
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(221, 210, 59, 5.5);
+    position: relative;
+    border: 2px solid transparent;
+    display: flex;
+    flex-direction: column; /* 保持垂直方向排列 */
+    justify-content: space-between; /* 內容均勻分布 */
+    height: auto; /* 根據內容自適應高度 */
+}
+
+.flag-item .flag-title {
+    font-weight: bold;
+    font-size: 1em; /* 減小字體大小 */
+    word-wrap: break-word; /* 避免文字超出框 */
+}
+
+.flag-item .flag-description {
+    font-weight: 800; /* 增加字體粗度 */
+    font-size: 0.95em; /* 略微調整字體大小以平衡粗體效果 */
+    color: #B5CAA0; /* 稍微加深文字顏色 */
+}
+
+.flags-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(550px, 1fr)); /* 增加每個卡片的最小寬度 */
+    gap: 15px; /* 卡片之間的間隔 */
+}
+
+
+        .flag-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .flag-item.selected {
+            border-color: #28a745;
+            background: #faf8ff;
+        }
+
+        .flag-title {
+            font-weight: bold;
+            color: #1a1a1a;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .flag-description {
+            color: #666;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+        }
+
+        .flag-id {
+            color: #666;
+            font-size: 0.9em;
+            padding-top: 8px;
+            border-top: 1px solid #eee;
+        }
+
+        .selected-count {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #28a745;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .copy-success {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #333;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            display: none;
+            animation: fadeInOut 2s ease;
+            z-index: 2000;
+        }
+
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateY(20px); }
+            15% { opacity: 1; transform: translateY(0); }
+            85% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(20px); }
+        }
+
+        @media (max-width: 768px) {
+            .input-group {
+                flex-direction: column;
+            }
+            
+            .paste-input, .paste-button, .clear-all, .copy-all {
+                width: 100%;
+            }
+
+            .flags-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 新的橫向按鈕布局 -->
+        <div class="button-container">
+            <div class="input-group">
+                <input type="text" id="pasteInput" class="paste-input" 
+                       placeholder="在此貼上FLAG名稱，例如：FLAG_SPORTS FLAG_AVERAGE_CAR FLAG_HAS_LIVERY">
+                <button onclick="searchPastedFlags()" class="paste-button">搜尋FLAG</button>
+                <button onclick="clearAllFlags()" class="clear-all">清除全部</button>
+                <button onclick="copyAllFlags()" class="copy-all">複製全部</button>
+            </div>
+        </div>
+
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="搜尋 FLAG 名稱或描述...">
+        </div>
+
+        <div id="selectedFlagsContainer" class="selected-flags-container">
+            <div id="selectedFlags" class="selected-flags"></div>
+        </div>
+
+        <div id="flagsContainer" class="flags-grid"></div>
+    </div>
+
+    <div id="copySuccess" class="copy-success">已複製到剪貼板</div>
+
+    <script>
+        // 示例數據，需要替換為完整的 flags 數據
+        const flags = [
+        {
+            id: 0,
+            name: "FLAG_SMALL_WORKER",
+            description: "Vehicle can only spawn on path nodes flagged to allow small worker vehicles.",
+            translation: "車輛只能在允許小型工作車輛的路徑節點上生成。"
+        },
+        {
+            id: 1,
+            name: "FLAG_BIG",
+            description: "Peds driving the vehicle will take wider turns...",
+            translation: "NPC駕駛時會："
+        },
+        {
+        id: 2,
+        name: "FLAG_NO_BOOT",
+        description: "Does nothing. Derivative from the IV flag noboot.",
+        translation: "無效果。源自GTA IV的noboot標誌。"
+    },
+    {
+        id: 3,
+        name: "FLAG_ONLY_DURING_OFFICE_HOURS",
+        description: "Derivative from the GTA IV flag onlyduringofficehours...",
+        translation: "源自GTA IV的辦公時間限制。遊戲將上班時間設為07:00至05:00之間，導致此功能無法正常運作。"
+    },
+    {
+        id: 4,
+        name: "FLAG_BOOT_IN_FRONT",
+        description: "Does nothing. Use FLAG_FRONT_BOOT instead.",
+        translation: "無效果。請使用FLAG_FRONT_BOOT替代。"
+    },
+    {
+        id: 5,
+        name: "FLAG_IS_VAN",
+        description: "The vehicle will never spawn in traffic with more than one passenger.",
+        translation: "車輛在交通流中生成時永遠不會有超過一名乘客。"
+    },
+    {
+        id: 6,
+        name: "FLAG_AVOID_TURNS",
+        description: "AI driving the vehicle will try to avoid turning at intersections...",
+        translation: "AI駕駛會盡量避免在路口轉彎（除非別無選擇）。只能在多車道路上生成，非高速公路時優先在左側車道生成。"
+    },
+    {
+        id: 7,
+        name: "FLAG_HAS_LIVERY",
+        description: "The vehicle will cycle between liveries...",
+        translation: "車輛會在不同塗裝間循環（塗裝通常命名為modelname_sign_x）。最多支持30種塗裝，貼圖名稱不超過31字符。"
+    },
+    {
+        id: 8,
+        name: "FLAG_LIVERY_MATCH_EXTRA",
+        description: "Vehicle will spawn with livery ID set to match the toggled on extra...",
+        translation: "車輛塗裝ID會與開啟的額外部件匹配。額外部件多於塗裝時使用最後一個塗裝，無額外部件時隨機選擇。"
+    },
+    {
+        id: 9,
+        name: "FLAG_SPORTS",
+        description: "Idle camera will focus on the vehicle if the vehicle has a swankness value above 4...",
+        translation: "車輛在交通中生成時，會優先使用亮度高於150（RGB）或低於50的顏色，且停車時配備警報器。"
+    },
+    {
+        id: 10,
+        name: "FLAG_DELIVERY",
+        description: "Parked vehicles spawn with wheels turned to a much higher angle.",
+        translation: "停車時車輪會轉向更大角度。"
+    },
+    {
+        id: 11,
+        name: "FLAG_NOAMBIENTOCCLUSION",
+        description: "Disables the vehicle's ground ambient occlusion.",
+        translation: "禁用車輛的地面環境光遮蔽。"
+    },
+    {
+        id: 12,
+        name: "FLAG_ONLY_ON_HIGHWAYS",
+        description: "Vehicle will only spawn on highways. Flag is unused but is derivative from the IV flag onlyonhighways.",
+        translation: "車輛只在高速公路上生成（未使用的標誌，源自GTA IV）。"
+    },
+    {
+        id: 13,
+        name: "FLAG_TALL_SHIP",
+        description: "Vehicle will not spawn on nodes going under low bridges.",
+        translation: "車輛不會在低橋下的節點生成。"
+    },
+    {
+        id: 14,
+        name: "FLAG_SPAWN_ON_TRAILER",
+        description: "In traffic, vehicles with this flag have a 50% chance of spawning on trailers...",
+        translation: "在交通流中，有50%機率生成在拖車上。拖車會生成3-5輛車。"
+    },
+    {
+        id: 15,
+        name: "FLAG_SPAWN_BOAT_ON_TRAILER",
+        description: "In traffic, vehicles with this flag have a 50% chance of spawning on trailers...",
+        translation: "在交通流中，有50%機率生成在拖車上，位置相對於船用拖車模型固定。"
+    },
+    {
+        id: 16,
+        name: "FLAG_EXTRAS_GANG",
+        description: "The vehicle spawns with extras 5-9 if driven by a ped defined as a gang member.",
+        translation: "當由幫派成員駕駛時，車輛會生成額外部件5-9。"
+    },
+    {
+        id: 17,
+        name: "FLAG_EXTRAS_CONVERTIBLE",
+        description: "Makes extras 1-4 unbreakable...",
+        translation: "使額外部件1-4不可損壞，並在這些部件間隨機循環。"
+    },
+        {
+            id: 18,
+            name: "FLAG_EXTRAS_TAXI",
+            description: "The majority of taxi logic is enabled through this flag...",
+            translation: "啟用計程車邏輯："
+        },
+        {
+            id: 19,
+            name: "FLAG_EXTRAS_RARE",
+            description: "Extras only have a 25% chance of spawning.",
+            translation: "額外部件只有25%機率生成。"
+        },
+        {
+            id: 20,
+            name: "FLAG_EXTRAS_REQUIRE",
+            description: "The vehicle always spawns with at least 1 extra toggled on.",
+            translation: "車輛生成時至少會開啟一個額外部件。"
+        },
+        {
+            id: 21,
+            name: "FLAG_EXTRAS_STRONG",
+            description: "Prevents extras from breaking off during collisions.",
+            translation: "防止額外部件在碰撞時脫落。"
+        },
+        {
+            id: 22,
+            name: "FLAG_EXTRAS_ONLY_BREAK_WHEN_DESTROYED",
+            description: "Extras on the vehicle can only break off once the vehicle is completely destroyed...",
+            translation: "額外部件只有在車輛完全損毀時（如爆炸）才會脫落。"
+        },
+        {
+            id: 23,
+            name: "FLAG_EXTRAS_SCRIPT",
+            description: "Extras 5-8 (extra 7 on planes, and extras 10-12 on helicopters) will never spawn...",
+            translation: "部件5-8（飛機為部件7，直升機為部件10-12）永不自動生成，只能通過腳本開啟。"
+        },
+        {
+            id: 24,
+            name: "FLAG_EXTRAS_ALL",
+            description: "The vehicle always spawns with all extras toggled on.",
+            translation: "車輛生成時所有額外部件都會開啟。"
+        },
+        {
+            id: 25,
+            name: "FLAG_EXTRAS_MATCH_LIVERY",
+            description: "Vehicle will spawn with extra toggled on to match the set livery ID.",
+            translation: "車輛生成時會根據設定的塗裝ID開啟對應的額外部件。"
+        },
+        {
+            id: 26,
+            name: "FLAG_DONT_ROTATE_TAIL_ROTOR",
+            description: "Prevents the helicopter's tail rotor from rotating.",
+            translation: "防止直升機尾部旋翼旋轉。"
+        },
+        {
+            id: 27,
+            name: "FLAG_PARKING_SENSORS",
+            description: "The vehicle has a parking sensor gadget. Sounds are hardcoded to never play.",
+            translation: "車輛具有停車感應器，但聲音效果被硬編碼為永不播放。"
+        },
+        {
+            id: 28,
+            name: "FLAG_PEDS_CAN_STAND_ON_TOP",
+            description: "Allows the player and AI peds to stand on top of the vehicle without ragdolling off.",
+            translation: "允許玩家和AI站在車頂而不會滑落。注意：BURRITO車型會忽略此標誌。"
+        },
+        {
+            id: 29,
+            name: "FLAG_TAILGATE_TYPE_BOOT",
+            description: "Does nothing.",
+            translation: "無效果。"
+        },
+        {
+            id: 30,
+            name: "FLAG_GEN_NAVMESH",
+            description: "Generates navmesh on the vehicle. Typically used on boats, trailers, and train cars.",
+            translation: "在車輛上生成導航網格。通常用於船隻、拖車和火車車廂。"
+        },
+        {
+            id: 31,
+            name: "FLAG_LAW_ENFORCEMENT",
+            description: "[long description about law enforcement vehicles]",
+            translation: "執法車輛特性："
+        },
+        {
+            id: 32,
+            name: "FLAG_EMERGENCY_SERVICE",
+            description: "Emergency service vehicle properties...",
+            translation: "緊急服務車輛特性："
+        },
+        {
+            id: 33,
+            name: "FLAG_DRIVER_NO_DRIVE_BY",
+            description: "Prevents the driver from using any weapons in the vehicle.",
+            translation: "防止駕駛員在車內使用任何武器。"
+        },
+        {
+            id: 34,
+            name: "FLAG_NO_RESPRAY",
+            description: "Used by carmod scripts to remove the option to respray the vehicle.",
+            translation: "用於改車腳本，移除重噴漆選項。"
+        },
+        {
+            id: 35,
+            name: "FLAG_IGNORE_ON_SIDE_CHECK",
+            description: "Player will avoid pathfinding towards vehicles that are on their side.",
+            translation: "玩家會避免尋路到側翻的車輛。"
+        },
+        {
+            id: 36,
+            name: "FLAG_RICH_CAR",
+            description: "Rich NPCs may be seen driving the vehicle in traffic...",
+            translation: "富有的NPC可能在交通中駕駛此車輛，且車輛會在Portola Drive購物區停放。與非船隻碰撞時會導致駕駛有更強烈的反應。"
+        },
+        {
+            id: 37,
+            name: "FLAG_AVERAGE_CAR",
+            description: "Average NPCs may be seen driving the vehicle in traffic.",
+            translation: "普通NPC可能在交通中駕駛此車輛。"
+        },
+        {
+            id: 38,
+            name: "FLAG_POOR_CAR",
+            description: "Poor NPCs may be seen driving the vehicle in traffic.",
+            translation: "貧窮的NPC可能在交通中駕駛此車輛。"
+        },
+        {
+            id: 39,
+            name: "FLAG_ALLOWS_RAPPEL",
+            description: "Allows the player and AI peds to rappel from the vehicle.",
+            translation: "允許玩家和AI從車輛上進行繩降。"
+        },
+        {
+            id: 40,
+            name: "FLAG_DONT_CLOSE_DOOR_UPON_EXIT",
+            description: "The player and AI peds won't close the door after exiting the vehicle.",
+            translation: "玩家和AI離開車輛時不會關閉車門。"
+        },
+        {
+            id: 41,
+            name: "FLAG_USE_HIGHER_DOOR_TORQUE",
+            description: "使用更高的車門扭矩。",
+            translation: "使用更高的車門扭矩。"
+        },
+        {
+            id: 42,
+            name: "FLAG_DISABLE_THROUGH_WINDSCREEN",
+            description: "Prevents the player and AI peds from being ejected through the windshield during a crash.",
+            translation: "防止玩家和AI在碰撞時被拋出擋風玻璃。"
+        },
+        {
+            id: 43,
+            name: "FLAG_IS_ELECTRIC",
+            description: "Disables oil leaks and damage to petrol tank...",
+            translation: "禁用漏油和油箱損壞。禁用渦輪增壓模組的動力提升。裝有此標誌的火車會為阻擋路徑的車輛停車。"
+        },
+        {
+            id: 44,
+            name: "FLAG_NO_BROKEN_DOWN_SCENARIO",
+            description: "The vehicle will never spawn as part of a WORLD_VEHICLE_BROKEN_DOWN scenario.",
+            translation: "車輛永不會作為故障車輛場景的一部分生成。"
+        },
+        {
+            id: 45,
+            name: "FLAG_IS_JETSKI",
+            description: "標記為水上摩托艇。",
+            translation: "標記為水上摩托艇。"
+        },
+        {
+            id: 46,
+            name: "FLAG_DAMPEN_STICKBOMB_DAMAGE",
+            description: "The vehicle takes less damage from explosions caused by a sticky bomb.",
+            translation: "車輛受到黏性炸彈爆炸的傷害減少。"
+        },
+        {
+            id: 47,
+            name: "FLAG_DONT_SPAWN_IN_CARGEN",
+            description: "The vehicle will never spawn during world car generation...",
+            translation: "車輛永不會在世界車輛生成中出現（主要影響停放的車輛，不影響交通流生成）。"
+        },
+        {
+            id: 48,
+            name: "FLAG_IS_OFFROAD_VEHICLE",
+            description: "Peds will consider off-road paths as valid routes.",
+            translation: "NPC會將越野路徑視為有效路線。"
+        },
+        {
+            id: 49,
+            name: "FLAG_INCREASE_PED_COMMENTS",
+            description: "Causes AI peds to randomly comment on the vehicle more frequently.",
+            translation: "使AI行人更頻繁地對車輛進行隨機評論。"
+        },
+        {
+            id: 50,
+            name: "FLAG_EXPLODE_ON_CONTACT",
+            description: "接觸時爆炸。",
+            translation: "接觸時爆炸。"
+        },
+        {
+            id: 51,
+            name: "FLAG_USE_FAT_INTERIOR_LIGHT",
+            description: "Increases the size and intensity of the vehicle's interior light.",
+            translation: "增加車輛內部燈光的大小和強度。"
+        },
+        {
+            id: 52,
+            name: "FLAG_HEADLIGHTS_USE_ACTUAL_BONE_POS",
+            description: "大燈使用實際骨骼位置。",
+            translation: "大燈使用實際骨骼位置。"
+        },
+        {
+            id: 53,
+            name: "FLAG_FAKE_EXTRALIGHTS",
+            description: "Causes extralights to behave as normal headlights.",
+            translation: "使額外燈光表現為普通前燈。"
+        },
+        {
+            id: 54,
+            name: "FLAG_CANNOT_BE_MODDED",
+            description: "Prevents the vehicle from entering Los Santos Customs.",
+            translation: "防止車輛進入洛聖都改裝店。"
+        },
+        {
+            id: 55,
+            name: "FLAG_DONT_SPAWN_AS_AMBIENT",
+            description: "Prevents the vehicle from spawning in ambient scenarios.",
+            translation: "防止車輛在環境場景中生成。"
+        },
+        {
+            id: 56,
+            name: "FLAG_IS_BULKY",
+            description: "標記為笨重車輛。",
+            translation: "標記為笨重車輛。"
+        },
+        {
+            id: 57,
+            name: "FLAG_BLOCK_FROM_ATTRACTOR_SCENARIO",
+            description: "The vehicle will never spawn as part of a WORLD_VEHICLE_ATTRACTOR scenario.",
+            translation: "車輛永不會作為吸引物場景的一部分生成。"
+        },
+        {
+            id: 58,
+            name: "FLAG_IS_BUS",
+            description: "標記為公共汽車。",
+            translation: "標記為公共汽車。"
+        },
+        {
+            id: 59,
+            name: "FLAG_USE_STEERING_PARAM_FOR_LEAN",
+            description: "使用轉向參數進行傾斜。",
+            translation: "使用轉向參數進行傾斜。"
+        },
+        {
+            id: 60,
+            name: "FLAG_CANNOT_BE_DRIVEN_BY_PLAYER",
+            description: "Prevents the player from entering the vehicle.",
+            translation: "防止玩家進入車輛。"
+        },
+        {
+            id: 61,
+            name: "FLAG_SPRAY_PETROL_BEFORE_EXPLOSION",
+            description: "The vehicle will spill gasoline before exploding.",
+            translation: "車輛在爆炸前會灑出汽油。"
+        },
+        {
+            id: 62,
+            name: "FLAG_ATTACH_TRAILER_ON_HIGHWAY",
+            description: "The vehicle will spawns with a trailer only on roads marked as highways.",
+            translation: "車輛只在標記為高速公路的道路上生成時才會掛接拖車。"
+        },
+        {
+            id: 63,
+            name: "FLAG_ATTACH_TRAILER_IN_CITY",
+            description: "The vehicle will spawns with a trailer only in the Los Santos region.",
+            translation: "車輛只在洛聖都地區生成時才會掛接拖車。"
+        },
+        {
+            id: 64,
+            name: "FLAG_HAS_NO_ROOF",
+            description: "Ignores various roof checks...",
+            translation: "忽略各種車頂檢查。如果配合FLAG_ALLOW_HATS_NO_ROOF使用，可防止NPC帽子被移除。"
+        },
+        {
+            id: 65,
+            name: "FLAG_ALLOW_TARGETING_OF_OCCUPANTS",
+            description: "允許瞄準車內乘客。",
+            translation: "允許瞄準車內乘客。"
+        },
+        {
+            id: 66,
+            name: "FLAG_RECESSED_HEADLIGHT_CORONAS",
+            description: "使用凹陷式頭燈光環。",
+            translation: "使用凹陷式頭燈光環。"
+        },
+        {
+            id: 67,
+            name: "FLAG_RECESSED_TAILLIGHT_CORONAS",
+            description: "使用凹陷式尾燈光環。",
+            translation: "使用凹陷式尾燈光環。"
+        },
+        {
+            id: 68,
+            name: "FLAG_IS_TRACKED_FOR_TRAILS",
+            description: "Does nothing.",
+            translation: "無效果。"
+        },
+        {
+            id: 69,
+            name: "FLAG_HEADLIGHTS_ON_LANDINGGEAR",
+            description: "頭燈安裝在著陸裝置上。",
+            translation: "頭燈安裝在著陸裝置上。"
+        },
+        {
+            id: 70,
+            name: "FLAG_CONSIDERED_FOR_VEHICLE_ENTRY_WHEN_STOOD_ON",
+            description: "The player and AI peds will prioritize entering the vehicle when standing on top of it.",
+            translation: "玩家和AI站在車頂時會優先考慮進入車輛。"
+        },
+        {
+            id: 71,
+            name: "FLAG_GIVE_SCUBA_GEAR_ON_EXIT",
+            description: "The player receives scuba gear when exiting the vehicle.",
+            translation: "玩家離開車輛時會獲得潛水裝備。"
+        },
+        {
+            id: 72,
+            name: "FLAG_IS_DIGGER",
+            description: "標記為挖掘機。",
+            translation: "標記為挖掘機。"
+        },
+        {
+            id: 73,
+            name: "FLAG_IS_TANK",
+            description: "Makes the vehicle fireproof. AI peds will react to it as they would towards a tank.",
+            translation: "使車輛防火。AI會像對待坦克一樣對待此車輛。"
+        },
+        {
+            id: 74,
+            name: "FLAG_USE_COVERBOUND_INFO_FOR_COVERGEN",
+            description: "使用掩護邊界信息生成掩護點。",
+            translation: "使用掩護邊界信息生成掩護點。"
+        },
+        {
+            id: 75,
+            name: "FLAG_CAN_BE_DRIVEN_ON",
+            description: "Allows other vehicles to drive on top of the vehicle.",
+            translation: "允許其他車輛在此車輛上方行駛。"
+        },
+        {
+            id: 76,
+            name: "FLAG_HAS_BULLETPROOF_GLASS",
+            description: "Prevents the glass from breaking, essentially making it behave as static glass found on buildings around the map.",
+            translation: "防止玻璃破碎，使其表現得像地圖上建築物的靜態玻璃。"
+        },
+        {
+            id: 77,
+            name: "FLAG_CANNOT_TAKE_COVER_WHEN_STOOD_ON",
+            description: "Prevents the player and AI peds from taking cover while standing on top of the vehicle.",
+            translation: "防止玩家和AI站在車頂時使用掩護。"
+        },
+        {
+            id: 78,
+            name: "FLAG_INTERIOR_BLOCKED_BY_BOOT",
+            description: "車廂被後備箱擋住。",
+            translation: "車廂被後備箱擋住。"
+        },
+        {
+            id: 79,
+            name: "FLAG_DONT_TIMESLICE_WHEELS",
+            description: "Prevents the vehicle wheels from producing the time slicing effect when they rotate at higher speed.",
+            translation: "防止車輪在高速旋轉時產生時間切片效果。"
+        },
+        {
+            id: 80,
+            name: "FLAG_FLEE_FROM_COMBAT",
+            description: "The AI driver of the vehicle will always drive away from the area if the player or AI is currently in combat in that area.",
+            translation: "如果玩家或AI在該區域發生戰鬥，AI駕駛會始終駛離該區域。"
+        },
+        {
+            id: 81,
+            name: "FLAG_DRIVER_SHOULD_BE_FEMALE",
+            description: "The vehicle will only spawn driven by female peds.",
+            translation: "車輛只會由女性NPC駕駛。"
+        },
+        {
+            id: 82,
+            name: "FLAG_DRIVER_SHOULD_BE_MALE",
+            description: "The vehicle will only spawn driven by male peds.",
+            translation: "車輛只會由男性NPC駕駛。"
+        },
+        {
+            id: 83,
+            name: "FLAG_COUNT_AS_FACEBOOK_DRIVEN",
+            description: "Used to track progress of the vehicles the player purchased from Legendary Motorsport and drove...",
+            translation: "用於追踪玩家從傳奇車行購買並駕駛過的車輛。當所有帶此標誌的車輛都被駕駛過後，遊戲會發送帖子到Facebook（如果已連接）。在PS4、PC和XB1版本中因移除Facebook整合而未使用。"
+        },
+        {
+            id: 84,
+            name: "FLAG_BIKE_CLAMP_PICKUP_LEAN_RATE",
+            description: "摩托車夾具拾取傾斜率。",
+            translation: "摩托車夾具拾取傾斜率。"
+        },
+        {
+            id: 85,
+            name: "FLAG_PLANE_WEAR_ALTERNATIVE_HELMET",
+            description: "飛機使用替代頭盔。",
+            translation: "飛機使用替代頭盔。"
+        },
+        {
+            id: 86,
+            name: "FLAG_USE_STRICTER_EXIT_COLLISION_TESTS",
+            description: "使用更嚴格的出口碰撞測試。",
+            translation: "使用更嚴格的出口碰撞測試。"
+        },
+        {
+            id: 87,
+            name: "FLAG_TWO_DOORS_ONE_SEAT",
+            description: "兩個門對應一個座位。",
+            translation: "兩個門對應一個座位。"
+        },
+        {
+            id: 88,
+            name: "FLAG_USE_LIGHTING_INTERIOR_OVERRIDE",
+            description: "Keeps interiorlight node active, even when vehicle engine is off/player is not inside.",
+            translation: "保持內部照明節點活動，即使引擎關閉或玩家不在車內。"
+        },
+        {
+            id: 89,
+            name: "FLAG_USE_RESTRICTED_DRIVEBY_HEIGHT",
+            description: "Restricts how high the player can aim their weapon inside the vehicle.",
+            translation: "限制玩家在車內瞄準武器的高度。"
+        },
+        {
+            id: 90,
+            name: "FLAG_CAN_HONK_WHEN_FLEEING",
+            description: "The AI peds will use the horn when trying to flee the area.",
+            translation: "AI在試圖逃離區域時會使用喇叭。"
+        },
+        {
+            id: 91,
+            name: "FLAG_PEDS_INSIDE_CAN_BE_SET_ON_FIRE_MP",
+            description: "The player and AI peds can be set on fire while they're inside the vehicle. Works only in GTA Online.",
+            translation: "玩家和AI在車內時可以被點燃。僅在GTA Online中有效。"
+        },
+        {
+            id: 92,
+            name: "FLAG_REPORT_CRIME_IF_STANDING_ON",
+            description: "The player will gain a wanted level if they stand on top of the vehicle.",
+            translation: "玩家站在車頂時會獲得通緝等級。"
+        },
+        {
+            id: 93,
+            name: "FLAG_HELI_USES_FIXUPS_ON_OPEN_DOOR",
+            description: "直升機在開門時使用修正。",
+            translation: "直升機在開門時使用修正。"
+        },
+        {
+            id: 94,
+            name: "FLAG_FORCE_ENABLE_CHASSIS_COLLISION",
+            description: "強制啟用車架碰撞。",
+            translation: "強制啟用車架碰撞。"
+        },
+        {
+            id: 95,
+            name: "FLAG_CANNOT_BE_PICKUP_BY_CARGOBOB",
+            description: "Prevents the vehicle from being picked up by a Cargobob.",
+            translation: "防止車輛被運兵直升機吊起。"
+        },
+        {
+            id: 96,
+            name: "FLAG_CAN_HAVE_NEONS",
+            description: "The vehicle has a chance of spawning in traffic with neon lights equipped.",
+            translation: "車輛在交通中生成時有機會裝備霓虹燈。"
+        },
+        {
+            id: 97,
+            name: "FLAG_HAS_INTERIOR_EXTRAS",
+            description: "The vehicle can spawn with extras ten, 11, and 12 at random.",
+            translation: "車輛可以隨機生成帶有10、11和12號額外內飾。"
+        },
+        {
+            id: 98,
+            name: "FLAG_HAS_TURRET_SEAT_ON_VEHICLE",
+            description: "車輛上有炮塔座位。",
+            translation: "車輛上有炮塔座位。"
+        },
+        {
+            id: 99,
+            name: "FLAG_ALLOW_OBJECT_LOW_LOD_COLLISION",
+            description: "允許物體低細節層級碰撞。",
+            translation: "允許物體低細節層級碰撞。"
+        },
+        {
+            id: 100,
+            name: "FLAG_DISABLE_AUTO_VAULT_ON_VEHICLE",
+            description: "Prevents the player and AI peds from automatically climbing on top of the vehicle.",
+            translation: "防止玩家和AI自動爬上車頂。"
+        },
+        {
+            id: 101,
+            name: "FLAG_USE_TURRET_RELATIVE_AIM_CALCULATION",
+            description: "Sets the relative heading delta on the turret's Z axis rotation to 0.",
+            translation: "將炮塔Z軸旋轉的相對航向增量設置為0。"
+        },
+        {
+            id: 102,
+            name: "FLAG_USE_FULL_ANIMS_FOR_MP_WARP_ENTRY_POINTS",
+            description: "多人遊戲中傳送入口點使用完整動畫。",
+            translation: "多人遊戲中傳送入口點使用完整動畫。"
+        },
+        {
+            id: 103,
+            name: "FLAG_HAS_DIRECTIONAL_SHUFFLES",
+            description: "具有方向性移動。",
+            translation: "具有方向性移動。"
+        },
+        {
+            id: 104,
+            name: "FLAG_DISABLE_WEAPON_WHEEL_IN_FIRST_PERSON",
+            description: "Disables the weapon wheel in first person view.",
+            translation: "在第一人稱視角下禁用武器輪盤。"
+        },
+        {
+            id: 105,
+            name: "FLAG_USE_PILOT_HELMET",
+            description: "Forces the player and AI peds to put on a pilot helmet when inside the vehicle.",
+            translation: "玩家和AI在車內時強制戴上飛行員頭盔。"
+        },
+        {
+            id: 106,
+            name: "FLAG_USE_WEAPON_WHEEL_WITHOUT_HELMET",
+            description: "Does nothing.",
+            translation: "無效果。"
+        },
+        {
+            id: 107,
+            name: "FLAG_PREFER_ENTER_TURRET_AFTER_DRIVER",
+            description: "優先在駕駛員之後進入炮塔。",
+            translation: "優先在駕駛員之後進入炮塔。"
+        },
+        {
+            id: 108,
+            name: "FLAG_USE_SMALLER_OPEN_DOOR_RATIO_TOLERANCE",
+            description: "使用更小的開門比率容差。",
+            translation: "使用更小的開門比率容差。"
+        },
+        {
+            id: 109,
+            name: "FLAG_USE_HEADING_ONLY_IN_TURRET_MATRIX",
+            description: "炮塔矩陣中只使用航向。",
+            translation: "炮塔矩陣中只使用航向。"
+        },
+        {
+            id: 110,
+            name: "FLAG_DONT_STOP_WHEN_GOING_TO_CLIMB_UP_POINT",
+            description: "前往攀爬點時不停止。",
+            translation: "前往攀爬點時不停止。"
+        },
+        {
+            id: 111,
+            name: "FLAG_HAS_REAR_MOUNTED_TURRET",
+            description: "具有後置炮塔。",
+            translation: "具有後置炮塔。"
+        },
+        {
+            id: 112,
+            name: "FLAG_DISABLE_BUSTING",
+            description: "The player will not get busted while inside the vehicle.",
+            translation: "玩家在車內時不會被逮捕。"
+        },
+        {
+            id: 113,
+            name: "FLAG_IGNORE_RWINDOW_COLLISION",
+            description: "忽略後窗碰撞。",
+            translation: "忽略後窗碰撞。"
+        },
+        {
+            id: 114,
+            name: "FLAG_HAS_GULL_WING_DOORS",
+            description: "The vehicle's doors will open upwards, as gull wing doors would.",
+            translation: "車門會向上開啟，像鷗翼門一樣。"
+        },
+        {
+            id: 115,
+            name: "FLAG_CARGOBOB_HOOK_UP_CHASSIS",
+            description: "可被運輸直升機吊鉤掛在底盤上。",
+            translation: "可被運輸直升機吊鉤掛在底盤上。"
+        },
+        {
+            id: 116,
+            name: "FLAG_USE_FIVE_ANIM_THROW_FP",
+            description: "使用五個第一人稱投擲動畫。",
+            translation: "使用五個第一人稱投擲動畫。"
+        },
+        {
+            id: 117,
+            name: "FLAG_ALLOW_HATS_NO_ROOF",
+            description: "Allows the player and AI peds to keep wearing their hats if the vehicle has no roof.",
+            translation: "允許玩家和AI在無車頂車輛中保持戴帽。"
+        },
+        {
+            id: 118,
+            name: "FLAG_HAS_REAR_SEAT_ACTIVITIES",
+            description: "The vehicle has activities in the rear seat. Works only in GTA Online.",
+            translation: "車輛後座有特殊活動。僅在GTA Online中有效。"
+        },
+        {
+            id: 119,
+            name: "FLAG_HAS_LOWRIDER_HYDRAULICS",
+            description: "The vehicle is equipped with lowrider hydraulics.",
+            translation: "車輛配備低底盤液壓系統。"
+        },
+        {
+            id: 120,
+            name: "FLAG_HAS_BULLET_RESISTANT_GLASS",
+            description: "The vehicle's glass becomes resistant to bullets...",
+            translation: "車輛玻璃具有防彈性能。窗戶的碰撞ID必須設為122（強化玻璃/擋風玻璃）才能生效。"
+        },
+        {
+            id: 121,
+            name: "FLAG_HAS_INCREASED_RAMMING_FORCE",
+            description: "The vehicle is able to ram vehicles out the way more easily.",
+            translation: "車輛更容易撞開其他車輛。"
+        },
+        {
+            id: 122,
+            name: "FLAG_HAS_CAPPED_EXPLOSION_DAMAGE",
+            description: "The vehicle takes less damage from explosions.",
+            translation: "車輛受到爆炸傷害減少。"
+        },
+        {
+            id: 123,
+            name: "FLAG_HAS_LOWRIDER_DONK_HYDRAULICS",
+            description: "The vehicle is equipped with lowrider donk hydraulics...",
+            translation: "車輛配備改裝低底盤液壓系統。與普通低底盤不同的是，車輛無法\"跳躍\"，只能在液壓使用方向上移動。"
+        },
+        {
+            id: 124,
+            name: "FLAG_HELICOPTER_WITH_LANDING_GEAR",
+            description: "The helicopter has a landing gear.",
+            translation: "直升機具有著陸裝置。"
+        },
+        {
+            id: 125,
+            name: "FLAG_JUMPING_CAR",
+            description: "The vehicle is able to jump. The jump force can be modified through handling files.",
+            translation: "車輛能夠跳躍。跳躍力度可通過處理文件修改。"
+        },
+        {
+            id: 126,
+            name: "FLAG_HAS_ROCKET_BOOST",
+            description: "The vehicle can use a rocket boost...",
+            translation: "車輛可以使用火箭推進器。推進力和持續時間可通過處理文件修改。"
+        },
+        {
+            id: 127,
+            name: "FLAG_RAMMING_SCOOP",
+            description: "The vehicle has a scoop that can push vehicles out the way.",
+            translation: "車輛有一個可以推開其他車輛的鏟斗。"
+        },
+        {
+            id: 128,
+            name: "FLAG_HAS_PARACHUTE",
+            description: "The vehicle is equipped with a parachute that can be enabled while mid-air.",
+            translation: "車輛配備降落傘，可在空中啟用。"
+        },
+        {
+            id: 129,
+            name: "FLAG_RAMP",
+            description: "The vehicle is able to eject other vehicles while driving under them.",
+            translation: "車輛能夠在從下方經過時彈射其他車輛。"
+        },
+        {
+            id: 130,
+            name: "FLAG_HAS_EXTRA_SHUFFLE_SEAT_ON_VEHICLE",
+            description: "車輛有額外的座位切換功能。",
+            translation: "車輛有額外的座位切換功能。"
+        },
+        {
+            id: 131,
+            name: "FLAG_FRONT_BOOT",
+            description: "Allows the \"boot\" bone to fall off at high speeds when opened...",
+            translation: "允許\"後備箱\"骨骼在高速開啟時脫落，類似於\"引擎蓋\"骨骼的行為。"
+        },
+        {
+            id: 132,
+            name: "FLAG_HALF_TRACK",
+            description: "Does nothing.",
+            translation: "無效果。"
+        },
+        {
+            id: 133,
+            name: "FLAG_RESET_TURRET_SEAT_HEADING",
+            description: "重置炮塔座位朝向。",
+            translation: "重置炮塔座位朝向。"
+        },
+        {
+            id: 134,
+            name: "FLAG_TURRET_MODS_ON_ROOF",
+            description: "車頂上的炮塔改裝。",
+            translation: "車頂上的炮塔改裝。"
+        },
+        {
+            id: 135,
+            name: "FLAG_UPDATE_WEAPON_BATTERY_BONES",
+            description: "更新武器電池骨骼。",
+            translation: "更新武器電池骨骼。"
+        },
+        {
+            id: 136,
+            name: "FLAG_DONT_HOLD_LOW_GEARS_WHEN_ENGINE_UNDER_LOAD",
+            description: "引擎負載時不保持低檔位。",
+            translation: "引擎負載時不保持低檔位。"
+        },
+        {
+            id: 137,
+            name: "FLAG_HAS_GLIDER",
+            description: "Added in b1103.",
+            translation: "具有滑翔功能。"
+        },
+        {
+            id: 138,
+            name: "FLAG_INCREASE_LOW_SPEED_TORQUE",
+            description: "增加低速扭矩。",
+            translation: "增加低速扭矩。"
+        },
+        {
+            id: 139,
+            name: "FLAG_USE_AIRCRAFT_STYLE_WEAPON_TARGETING",
+            description: "使用飛機風格的武器瞄準系統。",
+            translation: "使用飛機風格的武器瞄準系統。"
+        },
+        {
+            id: 140,
+            name: "FLAG_KEEP_ALL_TURRETS_SYNCHRONISED",
+            description: "保持所有炮塔同步。",
+            translation: "保持所有炮塔同步。"
+        },
+        {
+            id: 141,
+            name: "FLAG_SET_WANTED_FOR_ATTACHED_VEH",
+            description: "為附加車輛設置通緝狀態。",
+            translation: "為附加車輛設置通緝狀態。"
+        },
+        {
+            id: 142,
+            name: "FLAG_TURRET_ENTRY_ATTACH_TO_DRIVER_SEAT",
+            description: "炮塔入口連接到駕駛座。",
+            translation: "炮塔入口連接到駕駛座。"
+        },
+        {
+            id: 143,
+            name: "FLAG_USE_STANDARD_FLIGHT_HELMET",
+            description: "使用標準飛行頭盔。",
+            translation: "使用標準飛行頭盔。"
+        },
+        {
+            id: 144,
+            name: "FLAG_SECOND_TURRET_MOD",
+            description: "第二個炮塔改裝。",
+            translation: "第二個炮塔改裝。"
+        },
+        {
+            id: 145,
+            name: "FLAG_THIRD_TURRET_MOD",
+            description: "第三個炮塔改裝。",
+            translation: "第三個炮塔改裝。"
+        },
+        {
+            id: 146,
+            name: "FLAG_HAS_EJECTOR_SEATS",
+            description: "Ejects the ped from the plane or helicopter if the ped bails mid-air.",
+            translation: "如果NPC在空中跳傘，會從飛機或直升機中彈射出來。"
+        },
+        {
+            id: 147,
+            name: "FLAG_TURRET_MODS_ON_CHASSIS",
+            description: "底盤上的炮塔改裝。",
+            translation: "底盤上的炮塔改裝。"
+        },
+        {
+            id: 148,
+            name: "FLAG_HAS_JATO_BOOST_MOD",
+            description: "The aircraft has a JATO boost modification. The JATO boost is hardcoded to the VMT_EXHAUST category.",
+            translation: "飛機具有JATO推進器改裝。JATO推進器硬編碼到VMT_EXHAUST類別。"
+        },
+        {
+            id: 149,
+            name: "FLAG_IGNORE_TRAPPED_HULL_CHECK",
+            description: "The game will not check if the player is trapped inside of the vehicle's geometry when attempting to navigate to the entry point.",
+            translation: "當嘗試導航到入口點時，遊戲不會檢查玩家是否被困在車輛幾何結構內。"
+        },
+        {
+            id: 150,
+            name: "FLAG_HOLD_TO_SHUFFLE",
+            description: "The player will shuffle seats when holding the context button.",
+            translation: "玩家按住上下文按鈕時會切換座位。"
+        },
+        {
+            id: 151,
+            name: "FLAG_TURRET_MOD_WITH_NO_STOCK_TURRET",
+            description: "無庫存炮塔的炮塔改裝。",
+            translation: "無庫存炮塔的炮塔改裝。"
+        },
+        {
+            id: 152,
+            name: "FLAG_EQUIP_UNARMED_ON_ENTER",
+            description: "The player will equip the \"Unarmed\" weapon when entering the vehicle.",
+            translation: "玩家進入車輛時會切換為\"空手\"武器。"
+        },
+        {
+            id: 153,
+            name: "FLAG_DISABLE_CAMERA_PUSH_BEYOND",
+            description: "禁用相機推進。",
+            translation: "禁用相機推進。"
+        },
+        {
+            id: 154,
+            name: "FLAG_HAS_VERTICAL_FLIGHT_MODE",
+            description: "The vehicle has vertical takeoff and flight ability. Unlike the standard VTOL ability, the vehicle cannot switch to flight mode while landed.",
+            translation: "車輛具有垂直起飛和飛行能力。與標準VTOL不同，車輛著陸時無法切換到飛行模式。"
+        },
+        {
+            id: 155,
+            name: "FLAG_HAS_OUTRIGGER_LEGS",
+            description: "The vehicle has outrigger legs. The vehicle is unable to drive while the legs are extended...",
+            translation: "車輛具有支撐腿。支撐腿展開時無法駕駛。部署和收回支撐腿的音效硬編碼為CHERNOBOG音效數據。"
+        },
+        {
+            id: 156,
+            name: "FLAG_CAN_NAVIGATE_TO_ON_VEHICLE_ENTRY",
+            description: "可以在車輛入口處導航。",
+            translation: "可以在車輛入口處導航。"
+        },
+        {
+            id: 157,
+            name: "FLAG_DROP_SUSPENSION_WHEN_STOPPED",
+            description: "The vehicle has air suspension. The suspension raises while driving and drops when the vehicle is stopped...",
+            translation: "車輛具有氣動懸架。行駛時懸架升高，停止時降低。處理中的默認懸架高度必須與正常行駛時相同，因為該標誌只控制懸架降低。"
+        },
+        {
+            id: 158,
+            name: "FLAG_DONT_CRASH_ABANDONED_NEAR_GROUND",
+            description: "接近地面時被遺棄的車輛不會墜毀。",
+            translation: "接近地面時被遺棄的車輛不會墜毀。"
+        },
+        {
+            id: 159,
+            name: "FLAG_USE_INTERIOR_RED_LIGHT",
+            description: "The vehicle's interior light will be colored red.",
+            translation: "車輛內部燈光為紅色。"
+        },
+        {
+            id: 160,
+            name: "FLAG_HAS_HELI_STRAFE_MODE",
+            description: "The aircraft is able to strafe like a helicopter.",
+            translation: "飛機能像直升機一樣進行掃射。"
+        },
+        {
+            id: 161,
+            name: "FLAG_HAS_VERTICAL_ROCKET_BOOST",
+            description: "The rocket or JATO boost will propel the vehicle directly upwards.",
+            translation: "火箭或JATO推進器會直接向上推動車輛。"
+        },
+        {
+            id: 162,
+            name: "FLAG_CREATE_WEAPON_MANAGER_ON_SPAWN",
+            description: "生成時創建武器管理器。",
+            translation: "生成時創建武器管理器。"
+        },
+        {
+            id: 163,
+            name: "FLAG_USE_ROOT_AS_BASE_LOCKON_POS",
+            description: "使用根部作為基礎鎖定位置。",
+            translation: "使用根部作為基礎鎖定位置。"
+        },
+        {
+            id: 164,
+            name: "FLAG_HEADLIGHTS_ON_TAP_ONLY",
+            description: "只能點按開啟頭燈。",
+            translation: "只能點按開啟頭燈。"
+        },
+        {
+            id: 165,
+            name: "FLAG_CHECK_WARP_TASK_FLAG_DURING_ENTER",
+            description: "進入時檢查傳送任務標誌。",
+            translation: "進入時檢查傳送任務標誌。"
+        },
+        {
+            id: 166,
+            name: "FLAG_USE_RESTRICTED_DRIVEBY_HEIGHT_HIGH",
+            description: "Restricts how high the player can aim their weapon inside the vehicle. The limit is higher than the default flag.",
+            translation: "限制玩家在車內瞄準武器的高度。限制高度比默認標誌更高。"
+        },
+        {
+            id: 167,
+            name: "FLAG_INCREASE_CAMBER_WITH_SUSPENSION_MOD",
+            description: "Increases the vehicle camber when suspension mods are equipped.",
+            translation: "安裝懸架改裝時增加車輛外傾角。"
+        },
+        {
+            id: 168,
+            name: "FLAG_NO_HEAVY_BRAKE_ANIMATION",
+            description: "The player and AI peds will not play a \"lean forward\" animation when breaking heavily.",
+            translation: "玩家和AI重刹車時不會播放\"前傾\"動畫。"
+        },
+        {
+            id: 169,
+            name: "FLAG_HAS_TWO_BONNET_BONES",
+            description: "The vehicle will use the \"bonnet\" and \"cargodoor\" bones simultaneously when opening the hood.",
+            translation: "開啟引擎蓋時會同時使用\"bonnet\"和\"cargodoor\"骨骼。"
+        },
+        {
+            id: 170,
+            name: "FLAG_DONT_LINK_BOOT2",
+            description: "Does nothing.",
+            translation: "無效果。"
+        },
+        {
+            id: 171,
+            name: "FLAG_HAS_INCREASED_RAMMING_FORCE_WITH_CHASSIS_MOD",
+            description: "Chassis modification apply more ramming force to the vehicle.",
+            translation: "底盤改裝會增加車輛的撞擊力。"
+        },
+        {
+            id: 172,
+            name: "FLAG_HAS_INCREASED_RAMMING_FORCE_VS_ALL_VEHICLES",
+            description: "對所有車輛都有增強的撞擊力。",
+            translation: "對所有車輛都有增強的撞擊力。"
+        },
+        {
+            id: 173,
+            name: "FLAG_HAS_EXTENDED_COLLISION_MODS",
+            description: "具有擴展的碰撞改裝。",
+            translation: "具有擴展的碰撞改裝。"
+        },
+        {
+            id: 174,
+            name: "FLAG_HAS_NITROUS_MOD",
+            description: "The vehicle has modifications that enable nitro boost...",
+            translation: "車輛具有啟用氮氣增壓的改裝。氮氣增壓硬編碼到VMT_ENGINEBAY2類別。腳本也可以不需要此標誌就強制啟用氮氣增壓。"
+        },
+        {
+            id: 175,
+            name: "FLAG_HAS_JUMP_MOD",
+            description: "The vehicle has a jump boost modification...",
+            translation: "車輛具有跳躍增壓改裝。跳躍增壓改裝硬編碼到VMT_ENGINEBAY3類別。"
+        },
+        {
+            id: 176,
+            name: "FLAG_HAS_RAMMING_SCOOP_MOD",
+            description: "The vehicle has a ramming scoop modification...",
+            translation: "車輛具有推土鏟改裝。推土鏟改裝硬編碼到VMT_CHASSIS2類別，需要scoop_1mod、scoop_2mod和scoop_3mod碰撞骨骼。"
+        },
+        {
+            id: 177,
+            name: "FLAG_HAS_SUPER_BRAKES_MOD",
+            description: "The vehicle has a super brakes modification.",
+            translation: "車輛具有超級剎車改裝。"
+        },
+        {
+            id: 178,
+            name: "FLAG_CRUSHES_OTHER_VEHICLES",
+            description: "The vehicle does more damage to any vehicle it drives on top of.",
+            translation: "車輛在壓過其他車輛時造成更多傷害。"
+        },
+        {
+            id: 179,
+            name: "FLAG_HAS_WEAPON_BLADE_MODS",
+            description: "The vehicle has sawblade modifications...",
+            translation: "車輛具有鋸片武器改裝。玩家和AI接觸到鋸片碰撞體時會被殺死。"
+        },
+        {
+            id: 180,
+            name: "FLAG_HAS_WEAPON_SPIKE_MODS",
+            description: "The vehicle has spike modifications...",
+            translation: "車輛具有尖刺武器改裝。玩家和AI撞到尖刺碰撞體時會被殺死。"
+        },
+        {
+            id: 181,
+            name: "FLAG_FORCE_BONNET_CAMERA_INSTEAD_OF_POV",
+            description: "強制使用引擎蓋視角而不是POV視角。",
+            translation: "強制使用引擎蓋視角而不是POV視角。"
+        },
+        {
+            id: 182,
+            name: "FLAG_RAMP_MOD",
+            description: "The vehicle has a ramp modification...",
+            translation: "車輛具有坡道改裝。坡道改裝硬編碼到VMT_CHASSIS2類別。"
+        },
+        {
+            id: 183,
+            name: "FLAG_HAS_TOMBSTONE",
+            description: "The vehicle has a very heavy and solid 'tombstone' part that can be ejected to stop pursuing vehicles.",
+            translation: "車輛具有一個非常重且堅固的\"墓碑\"部件，可以彈出以阻止追車。"
+        },
+        {
+            id: 184,
+            name: "FLAG_HAS_SIDE_SHUNT",
+            description: "The vehicle is able to shunt vehicles out the way...",
+            translation: "車輛能夠橫向推開其他車輛。側向推力硬編碼到VMT_ENGINEBAY2類別的mod索引3。"
+        },
+        {
+            id: 185,
+            name: "FLAG_HAS_FRONT_SPIKE_MOD",
+            description: "The vehicle has a front spike modification.",
+            translation: "車輛具有前置尖刺改裝。"
+        },
+        {
+            id: 186,
+            name: "FLAG_HAS_RAMMING_BAR_MOD",
+            description: "The vehicle has a ramming bar modification...",
+            translation: "車輛具有衝撞桿改裝。衝撞桿改裝硬編碼到VMT_CHASSIS2類別，需要ram_1mod、ram_2mod和ram_3mod碰撞骨骼。"
+        },
+        {
+            id: 187,
+            name: "FLAG_TURRET_MODS_ON_CHASSIS5",
+            description: "Enables turret mods on the VMT_CHASSIS5 category...",
+            translation: "在VMT_CHASSIS5類別啟用炮塔改裝，該改裝通常硬編碼到VMT_ROOF類別。"
+        },
+        {
+            id: 188,
+            name: "FLAG_HAS_SUPERCHARGER",
+            description: "Permanently enables the vacuum and blower/boost dials on the vehicle.",
+            translation: "永久啟用車輛的真空和增壓器/渦輪增壓儀表。"
+        },
+        {
+            id: 189,
+            name: "FLAG_IS_TANK_WITH_FLAME_DAMAGE",
+            description: "Similar to FLAG_IS_TANK, except the vehicle is not fireproof.",
+            translation: "類似於FLAG_IS_TANK，但車輛不防火。"
+        },
+        {
+            id: 190,
+            name: "FLAG_DISABLE_DEFORMATION",
+            description: "Disables visual deformation on the vehicle.",
+            translation: "禁用車輛的視覺變形。"
+        },
+        {
+            id: 191,
+            name: "FLAG_ALLOW_RAPPEL_AI_ONLY",
+            description: "只允許AI進行繩降。",
+            translation: "只允許AI進行繩降。"
+        },
+        {
+            id: 192,
+            name: "FLAG_USE_RESTRICTED_DRIVEBY_HEIGHT_MID_ONLY",
+            description: "只使用中等限制的駕車射擊高度。",
+            translation: "只使用中等限制的駕車射擊高度。"
+        },
+        {
+            id: 193,
+            name: "FLAG_FORCE_AUTO_VAULT_ON_VEHICLE_WHEN_STUCK",
+            description: "卡住時強制自動翻越車輛。",
+            translation: "卡住時強制自動翻越車輛。"
+        },
+        {
+            id: 194,
+            name: "FLAG_SPOILER_MOD_DOESNT_INCREASE_GRIP",
+            description: "The vehicle's spoiler mods do not add traction.",
+            translation: "車輛的擾流板改裝不會增加牽引力。"
+        },
+        {
+            id: 195,
+            name: "FLAG_NO_REVERSING_ANIMATION",
+            description: "The player and AI peds do not play an \"look back\" animation when reversing the vehicle.",
+            translation: "玩家和AI倒車時不會播放\"回頭看\"動畫。"
+        },
+        {
+            id: 196,
+            name: "FLAG_IS_QUADBIKE_USING_BIKE_ANIMATIONS",
+            description: "Allows the quadbike vehicle type to use bike layouts and animations.",
+            translation: "允許四輪摩托車使用摩托車的布局和動畫。"
+        },
+        {
+            id: 197,
+            name: "FLAG_IS_FORMULA_VEHICLE",
+            description: "Changes the tire mark texture from standard tires to slick tires.",
+            translation: "將輪胎痕跡紋理從標準輪胎更改為光面輪胎。"
+        },
+        {
+            id: 198,
+            name: "FLAG_LATCH_ALL_JOINTS",
+            description: "鎖定所有關節。",
+            translation: "鎖定所有關節。"
+        },
+        {
+            id: 199,
+            name: "FLAG_REJECT_ENTRY_TO_VEHICLE_WHEN_STOOD_ON",
+            description: "If the player is standing on top of the vehicle, the player character will not attempt to pathfind to the nearest vehicle door to enter...",
+            translation: "如果玩家站在車頂，角色不會嘗試尋路到最近的車門進入，也不會傳送到車內。"
+        },
+        {
+            id: 200,
+            name: "FLAG_CHECK_IF_DRIVER_SEAT_IS_CLOSER_THAN_TURRETS_WITH_ON_BOARD_ENTER",
+            description: "Checks whether the player character is closer to the driver's seat than the turret seat before deciding on which one to pathfind to.",
+            translation: "在決定尋路到哪個位置之前，檢查玩家角色是否離駕駛座比炮塔座位更近。"
+        },
+        {
+            id: 201,
+            name: "FLAG_RENDER_WHEELS_WITH_ZERO_COMPRESSION",
+            description: "Prevents the wheels and suspension from visually moving.",
+            translation: "防止車輪和懸掛系統產生視覺移動。"
+        },
+        {
+            id: 202,
+            name: "FLAG_USE_LENGTH_OF_VEHICLE_BOUNDS_FOR_PLAYER_LOCKON_POS",
+            description: "使用車輛邊界長度作為玩家鎖定位置。",
+            translation: "使用車輛邊界長度作為玩家鎖定位置。"
+        },
+        {
+            id: 203,
+            name: "FLAG_PREFER_FRONT_SEAT",
+            description: "優先選擇前座。",
+            translation: "優先選擇前座。"
+        }
+        ];
+
+        const selectedFlags = new Set();
+
+// 貼上搜尋功能
+function searchPastedFlags() {
+    const pastedText = document.getElementById('pasteInput').value;
+    const flagNames = pastedText.match(/FLAG_[A-Z0-9_]+/g) || [];
+    
+    // 清除之前的選擇
+    selectedFlags.clear();
+    
+    // 找出匹配的FLAG並添加到選中集合
+    flagNames.forEach(name => {
+        const flag = flags.find(f => f.name === name);
+        if (flag) {
+            selectedFlags.add(flag.name);
+        }
+    });
+    
+    // 更新顯示
+    updateSelectedFlagsDisplay();
+    updateFlags('');
+    
+    // 清空搜尋欄位
+    document.getElementById('searchInput').value = '';
+    
+    // 顯示提示
+    const successDiv = document.getElementById('copySuccess');
+    successDiv.textContent = `已找到 ${selectedFlags.size} 個匹配的FLAG`;
+    successDiv.style.display = 'block';
+    setTimeout(() => {
+        successDiv.style.display = 'none';
+    }, 2000);
+}
+
+// 更新FLAG顯示
+function updateFlags(searchTerm = '') {
+    const container = document.getElementById('flagsContainer');
+    container.innerHTML = '';
+    
+    const filteredFlags = flags.filter(flag => 
+        flag.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        flag.translation.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        flag.description.toLowerCase().includes(searchTerm.toLowerCase())
+    ).sort((a, b) => a.id - b.id);
+
+    filteredFlags.forEach(flag => {
+        container.appendChild(createFlagElement(flag));
+    });
+}
+
+// 創建FLAG元素
+function createFlagElement(flag) {
+    const flagDiv = document.createElement('div');
+    flagDiv.className = 'flag-item';
+    if (selectedFlags.has(flag.name)) {
+        flagDiv.classList.add('selected');
+    }
+    
+    flagDiv.innerHTML = `
+        <div class="flag-title">${flag.name}</div>
+        <div class="flag-description">${flag.translation}</div>
+        <div class="flag-id">ID: ${flag.id}</div>
+        ${selectedFlags.has(flag.name) ? '<div class="selected-count">✓</div>' : ''}
+    `;
+    
+    flagDiv.onclick = () => toggleFlag(flag, flagDiv);
+    
+    return flagDiv;
+}
+
+// 切換FLAG選中狀態
+function toggleFlag(flag, element) {
+    if (selectedFlags.has(flag.name)) {
+        selectedFlags.delete(flag.name);
+        element.classList.remove('selected');
+        element.querySelector('.selected-count')?.remove();
+    } else {
+        selectedFlags.add(flag.name);
+        element.classList.add('selected');
+        if (!element.querySelector('.selected-count')) {
+            element.innerHTML += '<div class="selected-count">✓</div>';
+        }
+    }
+    updateSelectedFlagsDisplay();
+}
+
+// 更新選中FLAG的顯示
+function updateSelectedFlagsDisplay() {
+    const container = document.getElementById('selectedFlagsContainer');
+    const display = document.getElementById('selectedFlags');
+    
+    if (selectedFlags.size > 0) {
+        container.style.display = 'block';
+        display.textContent = Array.from(selectedFlags).join(' ');
+    } else {
+        container.style.display = 'none';
+    }
+}
+
+// 清除所有選中的FLAG
+function clearAllFlags() {
+    selectedFlags.clear();
+    updateSelectedFlagsDisplay();
+    updateFlags(document.getElementById('searchInput').value);
+    document.getElementById('pasteInput').value = '';
+}
+
+// 複製所有選中的FLAG
+function copyAllFlags() {
+    if (selectedFlags.size > 0) {
+        const text = Array.from(selectedFlags).join(' ');
+        navigator.clipboard.writeText(text).then(() => {
+            const successDiv = document.getElementById('copySuccess');
+            successDiv.textContent = '已複製所有選中的 FLAGS';
+            successDiv.style.display = 'block';
+            setTimeout(() => {
+                successDiv.style.display = 'none';
+            }, 2000);
+        });
+    }
+}
+
+// 初始化事件監聽器
+document.addEventListener('DOMContentLoaded', function() {
+    // 初始顯示
+    updateFlags();
+    
+    // 搜尋輸入框事件
+    document.getElementById('searchInput').addEventListener('input', function(e) {
+        updateFlags(e.target.value.trim());
+    });
+
+    // 貼上區域的事件
+    document.getElementById('pasteInput').addEventListener('paste', function(e) {
+        setTimeout(() => {
+            searchPastedFlags();
+        }, 100);
+    });
+
+    // 貼上區域的回車鍵事件
+    document.getElementById('pasteInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            searchPastedFlags();
+        }
+    });
+});
+</script>
+</body>
+</html>
